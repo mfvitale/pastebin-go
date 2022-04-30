@@ -29,6 +29,10 @@ type Paste struct {
 	format     string
 }
 
-func New(name string, visibility Visibility, text string, expireDate string, format string) Paste {
+func FullPaste(name string, visibility Visibility, text string, expireDate string, format string) Paste {
 	return Paste{text, visibility, name, expireDate, format}
+}
+
+func SimplePaste(text string) Paste {
+	return Paste{text, Public, "", "", ""}
 }
