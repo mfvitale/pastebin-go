@@ -1,6 +1,7 @@
 package pastebin
 
 import (
+	"encoding/xml"
 	"io"
 	"log"
 	"net/http"
@@ -30,11 +31,11 @@ func AnonymousClient(devKey string) client {
 	return client{devKey, ""}
 }
 
-func (client client) CreatePaste(paste model.Paste) string {
+func (client client) CreatePaste(paste model.BasicPaste) string {
 
 	request := dto.PasteBinRequest{Text: "npm run", Format: "bash"}
 
-	req := structToValues(request)
+	req := structToValues(request) //TODO try with github.com/dranikpg/dto-mapper
 	req.Add("api_dev_key", client.devKey)
 	req.Add("api_option", "paste")
 
@@ -46,6 +47,27 @@ func (client client) CreatePaste(paste model.Paste) string {
 
 	generatePasteUrl := extractStringResponse(res)
 	return generatePasteUrl
+}
+
+func (client client) GetPastes() []model.Paste {
+
+	req := url.Values{
+		"api_dev_key":       {client.devKey},
+		"api_user_key":      {client.userKey},
+		"api_results_limit": {"100"},
+		"api_option":        {"list"},
+	}
+
+	res := doCall(apiPostUrl, req)
+
+	pastesRes := extractXmlResponse(res)
+
+	pastes := make([]model.Paste, len(pastesRes))
+	for i, paste := range pastesRes {
+		pastes[i] = model.From(paste)
+	}
+
+	return pastes
 }
 
 func connect(username string, password string, devKey string) string {
@@ -75,6 +97,7 @@ func structToValues(request dto.PasteBinRequest) (values url.Values) {
 
 func extractStringResponse(res *http.Response) string {
 
+	//TODO check status
 	b, err := io.ReadAll(res.Body)
 
 	if err != nil {
@@ -82,6 +105,23 @@ func extractStringResponse(res *http.Response) string {
 	}
 
 	return string(b)
+}
+
+func extractXmlResponse(res *http.Response) []dto.Paste {
+
+	b, err := io.ReadAll(res.Body)
+
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	//This beacuse is an invalid XML
+	result := "<pastes>" + string(b) + "</pastes>"
+
+	pastes := dto.PasteWrapper{}
+
+	xml.Unmarshal([]byte(result), &pastes)
+	return pastes.Pastes
 }
 
 func doCall(url string, data url.Values) *http.Response {
