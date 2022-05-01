@@ -115,7 +115,7 @@ func extractXmlResponse(res *http.Response) []dto.Paste {
 		log.Fatalln(err)
 	}
 
-	//This beacuse is an invalid XML
+	//This beacuse response from pastebin API is an invalid XML
 	result := "<pastes>" + string(b) + "</pastes>"
 
 	pastes := dto.PasteWrapper{}
