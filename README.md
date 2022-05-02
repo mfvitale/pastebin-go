@@ -1,3 +1,5 @@
+[![Go Reference](https://pkg.go.dev/badge/github.com/mfvitale/pastebin-go.svg)](https://pkg.go.dev/github.com/mfvitale/pastebin-go)
+
 # What is pastebin-go?
 pastebin-go is a Go library to interact with [Pastebin](https://pastebin.com/)
 
