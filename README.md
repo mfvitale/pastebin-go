@@ -1,4 +1,7 @@
 [![Go Reference](https://pkg.go.dev/badge/github.com/mfvitale/pastebin-go.svg)](https://pkg.go.dev/github.com/mfvitale/pastebin-go)
+![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/mfvitale/pastebin-go?style=flat-square)
+![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/mfvitale/pastebin-go?style=flat-square)
+![GitHub](https://img.shields.io/github/license/mfvitale/pastebin-go?style=flat-square)
 
 # What is pastebin-go?
 pastebin-go is a Go library to interact with [Pastebin](https://pastebin.com/)
