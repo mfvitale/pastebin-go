@@ -5,7 +5,7 @@ pastebin-go is a Go library to interact with [Pastebin](https://pastebin.com/)
 * Create a paste (guest, logged user)
 * List Pastes Created By A User
 * Delete A Paste Created By A User
-* Get raw paste output of users pastes including 'private' pastes
+* Get raw paste output of users' pastes including 'private' pastes
 * Get raw paste output of any 'public' & 'unlisted' pastes
 
 # Getting Started 

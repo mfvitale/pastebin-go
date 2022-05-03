@@ -2,6 +2,8 @@ package pastebin
 
 import (
 	"encoding/xml"
+	"errors"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -19,11 +21,16 @@ type client struct {
 	userKey string
 }
 
-func Client(devKey string, username string, passwrod string) client {
+func Client(devKey string, username string, passwrod string) (*client, error) {
 
-	apiDevKey := connect(username, passwrod, devKey)
+	apiDevKey, err := connect(username, passwrod, devKey)
 
-	return client{devKey, apiDevKey}
+	if err != nil {
+		log.Fatal("Unable to connect to PasteBin API", err)
+		return nil, errors.New("Unable to connect to PasteBin API")
+	}
+
+	return &client{devKey, apiDevKey}, nil
 }
 
 func AnonymousClient(devKey string) client {
@@ -31,11 +38,16 @@ func AnonymousClient(devKey string) client {
 	return client{devKey, ""}
 }
 
-func (client client) CreatePaste(paste model.BasicPaste) string {
+func (client client) CreatePaste(paste model.BasicPaste) (string, error) {
 
-	request := dto.PasteBinRequest{Text: "npm run", Format: "bash"}
+	pasteDto, err := paste.ToDTO()
 
-	req := structToValues(request) //TODO try with github.com/dranikpg/dto-mapper
+	if err != nil {
+		log.Fatalln("Unable to convert input data: ", err)
+		return "", errors.New("Unable to convert input data")
+	}
+
+	req := structToValues(*pasteDto)
 	req.Add("api_dev_key", client.devKey)
 	req.Add("api_option", "paste")
 
@@ -43,13 +55,45 @@ func (client client) CreatePaste(paste model.BasicPaste) string {
 		req.Add("api_user_key", client.userKey)
 	}
 
-	res := doCall(apiPostUrl, req)
+	res, err := doCall(apiPostUrl, req)
+
+	if err != nil {
+		log.Fatal("Error during call to PasteBin API", err)
+		return "", err
+	}
 
 	generatePasteUrl := extractStringResponse(res)
-	return generatePasteUrl
+	return generatePasteUrl, nil
 }
 
-func (client client) GetPastes() []model.Paste {
+func (client client) DeletePaste(pasteKey string) error {
+
+	req := url.Values{
+		"api_dev_key":   {client.devKey},
+		"api_paste_key": {pasteKey},
+		"api_option":    {"delete"},
+	}
+
+	if client.userKey != "" {
+		req.Add("api_user_key", client.userKey)
+	}
+
+	res, err := doCall(apiPostUrl, req)
+
+	if err != nil {
+		log.Fatal("Error during call to PasteBin API", err)
+		return err
+	}
+
+	generatePasteUrl := extractStringResponse(res)
+
+	//TODO check better the errors
+	log.Println(generatePasteUrl)
+
+	return nil
+}
+
+func (client client) GetPastes() ([]model.Paste, error) {
 
 	req := url.Values{
 		"api_dev_key":       {client.devKey},
@@ -58,7 +102,12 @@ func (client client) GetPastes() []model.Paste {
 		"api_option":        {"list"},
 	}
 
-	res := doCall(apiPostUrl, req)
+	res, err := doCall(apiPostUrl, req)
+
+	if err != nil {
+		log.Fatal("Error during call to PasteBin API", err)
+		return nil, err
+	}
 
 	pastesRes := extractXmlResponse(res)
 
@@ -67,10 +116,10 @@ func (client client) GetPastes() []model.Paste {
 		pastes[i] = model.From(paste)
 	}
 
-	return pastes
+	return pastes, nil
 }
 
-func connect(username string, password string, devKey string) string {
+func connect(username string, password string, devKey string) (string, error) {
 
 	req := url.Values{
 		"api_dev_key":       {devKey},
@@ -78,8 +127,14 @@ func connect(username string, password string, devKey string) string {
 		"api_user_password": {password},
 	}
 
-	res := doCall(apiLoginUrl, req)
-	return extractStringResponse(res)
+	res, err := doCall(apiLoginUrl, req)
+
+	if err != nil {
+		log.Fatal("Error during call to PasteBin API", err)
+		return "", err
+	}
+
+	return extractStringResponse(res), nil
 }
 
 func structToValues(request dto.PasteBinRequest) (values url.Values) {
@@ -101,8 +156,10 @@ func extractStringResponse(res *http.Response) string {
 	b, err := io.ReadAll(res.Body)
 
 	if err != nil {
-		log.Fatalln(err)
+		log.Fatalln("Error reading body", err)
 	}
+
+	defer res.Body.Close()
 
 	return string(b)
 }
@@ -115,6 +172,8 @@ func extractXmlResponse(res *http.Response) []dto.Paste {
 		log.Fatalln(err)
 	}
 
+	defer res.Body.Close()
+
 	//This beacuse response from pastebin API is an invalid XML
 	result := "<pastes>" + string(b) + "</pastes>"
 
@@ -124,12 +183,13 @@ func extractXmlResponse(res *http.Response) []dto.Paste {
 	return pastes.Pastes
 }
 
-func doCall(url string, data url.Values) *http.Response {
+func doCall(url string, data url.Values) (*http.Response, error) {
 
 	res, err := http.PostForm(url, data)
 
 	if err != nil {
-		log.Fatal(err)
+		return nil, fmt.Errorf("Error during call to PasteBin API: %w", err)
 	}
-	return res
+
+	return res, nil
 }
