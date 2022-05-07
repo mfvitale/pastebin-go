@@ -19,3 +19,16 @@ type Paste struct {
 	Url         string `xml:"paste_url"`
 	Hits        int    `xml:"paste_hits"`
 }
+
+type User struct {
+	XMLName    xml.Name `xml:"user"`
+	Name       string   `xml:"user_name"`
+	Format     string   `xml:"user_format_short"`
+	Expiration string   `xml:"user_expiration"`
+	Avatar     string   `xml:"user_avatar_url"`
+	Visibility int      `xml:"user_private"`
+	Website    string   `xml:"user_website"`
+	Email      string   `xml:"user_email"`
+	Location   string   `xml:"user_location"`
+	Type       int      `xml:"user_account_type"`
+}
