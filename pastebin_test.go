@@ -9,6 +9,18 @@ import (
 	"github.com/mfvitale/pastebin-go/model"
 )
 
+var client *Client
+var err error
+
+func init() {
+	/* load test data */
+	client, err = NewClient(os.Getenv("DEV_KEY"), os.Getenv("USERNAME"), os.Getenv("PASSWORD"))
+
+	log.Println("Creating client")
+	if err != nil {
+		log.Fatalln("Error creating client ", err)
+	}
+}
 func TestAnonymPasteCreation(t *testing.T) {
 
 	anonClient := NewAnonymousClient(os.Getenv("DEV_KEY"))
@@ -25,13 +37,6 @@ func TestAnonymPasteCreation(t *testing.T) {
 
 func TestLoggedPasteCreation(t *testing.T) {
 
-	log.Println(os.Getenv("USERNAME"), os.Getenv("PASSWORD"))
-	client, err := NewClient(os.Getenv("DEV_KEY"), os.Getenv("USERNAME"), os.Getenv("PASSWORD"))
-
-	if err != nil {
-		log.Fatalln("Error creating client ", err)
-	}
-
 	paste := model.FullPaste("Test paste bin", model.Public, "npm run", model.TEN_MINUTES, "bash")
 	res, err := client.CreatePaste(paste)
 
@@ -44,8 +49,6 @@ func TestLoggedPasteCreation(t *testing.T) {
 
 func TestGetPastes(t *testing.T) {
 
-	client, err := NewClient(os.Getenv("DEV_KEY"), os.Getenv("USERNAME"), os.Getenv("PASSWORD"))
-
 	res, err := client.GetPastes()
 
 	if len(res) == 0 || err != nil {
@@ -54,12 +57,6 @@ func TestGetPastes(t *testing.T) {
 }
 
 func TestGetRawPaste(t *testing.T) {
-
-	client, err := NewClient(os.Getenv("DEV_KEY"), os.Getenv("USERNAME"), os.Getenv("PASSWORD"))
-
-	if err != nil {
-		log.Fatalln("Error creating client ", err)
-	}
 
 	paste := model.FullPaste("This is a paste", model.Public, "npm run", model.TEN_MINUTES, "bash")
 	res, err := client.CreatePaste(paste)
