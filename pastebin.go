@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"net/url"
 
@@ -16,35 +15,33 @@ import (
 const apiPostUrl string = "https://pastebin.com/api/api_post.php"
 const apiLoginUrl string = "https://pastebin.com/api/api_login.php"
 
-type client struct {
+type Client struct {
 	devKey  string
 	userKey string
 }
 
-func Client(devKey string, username string, passwrod string) (*client, error) {
+func NewClient(devKey string, username string, passwrod string) (*Client, error) {
 
 	apiDevKey, err := connect(username, passwrod, devKey)
 
 	if err != nil {
-		log.Fatal("Unable to connect to PasteBin API", err)
-		return nil, errors.New("Unable to connect to PasteBin API")
+		return nil, fmt.Errorf("Unable to connect to PasteBin API: %w", err)
 	}
 
-	return &client{devKey, apiDevKey}, nil
+	return &Client{devKey, apiDevKey}, nil
 }
 
-func AnonymousClient(devKey string) client {
+func NewAnonymousClient(devKey string) Client {
 
-	return client{devKey, ""}
+	return Client{devKey, ""}
 }
 
-func (client client) CreatePaste(paste model.BasicPaste) (string, error) {
+func (client Client) CreatePaste(paste model.BasicPaste) (string, error) {
 
 	pasteDto, err := paste.ToDTO()
 
 	if err != nil {
-		log.Fatalln("Unable to convert input data: ", err)
-		return "", errors.New("Unable to convert input data")
+		return "", fmt.Errorf("Unable to convert input data: %w", err)
 	}
 
 	req := structToValues(*pasteDto)
@@ -58,15 +55,14 @@ func (client client) CreatePaste(paste model.BasicPaste) (string, error) {
 	res, err := doCall(apiPostUrl, req)
 
 	if err != nil {
-		log.Fatal("Error during call to PasteBin API", err)
-		return "", err
+		return "", fmt.Errorf("Error during call to 'CreatePaste' on PasteBin API: %w", err)
 	}
 
 	generatePasteUrl := extractStringResponse(res)
 	return generatePasteUrl, nil
 }
 
-func (client client) DeletePaste(pasteKey string) error {
+func (client Client) DeletePaste(pasteKey string) (string, error) {
 
 	req := url.Values{
 		"api_dev_key":   {client.devKey},
@@ -81,19 +77,13 @@ func (client client) DeletePaste(pasteKey string) error {
 	res, err := doCall(apiPostUrl, req)
 
 	if err != nil {
-		log.Fatal("Error during call to PasteBin API", err)
-		return err
+		return "", fmt.Errorf("Error during call to 'DeletePaste' on PasteBin API: %w", err)
 	}
 
-	generatePasteUrl := extractStringResponse(res)
-
-	//TODO check better the errors
-	log.Println(generatePasteUrl)
-
-	return nil
+	return extractStringResponse(res), nil
 }
 
-func (client client) GetPastes() ([]model.Paste, error) {
+func (client Client) GetPastes() ([]model.Paste, error) {
 
 	req := url.Values{
 		"api_dev_key":       {client.devKey},
@@ -105,8 +95,7 @@ func (client client) GetPastes() ([]model.Paste, error) {
 	res, err := doCall(apiPostUrl, req)
 
 	if err != nil {
-		log.Fatal("Error during call to PasteBin API", err)
-		return nil, err
+		return nil, fmt.Errorf("Error during call to 'GetPastes' on PasteBin API: %w", err)
 	}
 
 	pastesRes := extractXmlResponse(res)
@@ -130,7 +119,6 @@ func connect(username string, password string, devKey string) (string, error) {
 	res, err := doCall(apiLoginUrl, req)
 
 	if err != nil {
-		log.Fatal("Error during call to PasteBin API", err)
 		return "", err
 	}
 
@@ -150,32 +138,15 @@ func structToValues(request dto.PasteBinRequest) (values url.Values) {
 	return toReturn
 }
 
-func extractStringResponse(res *http.Response) string {
+func extractStringResponse(body []byte) string {
 
-	//TODO check status
-	b, err := io.ReadAll(res.Body)
-
-	if err != nil {
-		log.Fatalln("Error reading body", err)
-	}
-
-	defer res.Body.Close()
-
-	return string(b)
+	return string(body)
 }
 
-func extractXmlResponse(res *http.Response) []dto.Paste {
-
-	b, err := io.ReadAll(res.Body)
-
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	defer res.Body.Close()
+func extractXmlResponse(body []byte) []dto.Paste {
 
 	//This beacuse response from pastebin API is an invalid XML
-	result := "<pastes>" + string(b) + "</pastes>"
+	result := "<pastes>" + string(body) + "</pastes>"
 
 	pastes := dto.PasteWrapper{}
 
@@ -183,7 +154,7 @@ func extractXmlResponse(res *http.Response) []dto.Paste {
 	return pastes.Pastes
 }
 
-func doCall(url string, data url.Values) (*http.Response, error) {
+func doCall(url string, data url.Values) ([]byte, error) {
 
 	res, err := http.PostForm(url, data)
 
@@ -191,5 +162,17 @@ func doCall(url string, data url.Values) (*http.Response, error) {
 		return nil, fmt.Errorf("Error during call to PasteBin API: %w", err)
 	}
 
-	return res, nil
+	body, err := io.ReadAll(res.Body)
+
+	if err != nil {
+		return nil, fmt.Errorf("Error during parse response body: %w", err)
+	}
+
+	if res.StatusCode != http.StatusOK {
+		return nil, errors.New(string(body))
+	}
+
+	defer res.Body.Close()
+
+	return body, nil
 }
