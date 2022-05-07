@@ -19,3 +19,15 @@ type Paste struct {
 	Url         string `xml:"paste_url"`
 	Hits        int    `xml:"paste_hits"`
 }
+
+type User struct {
+	Name       string
+	Format     string
+	Expiration string
+	Avatar     string
+	Visibility string
+	Website    string
+	Email      string
+	Location   string
+	Type       string
+}
