@@ -6,7 +6,7 @@ on:
 env:
   DEV_KEY: ${{secrets.DEV_KEY}} 
   USERNAME: ${{secrets.USERNAME}}
-  PASSWROD: ${{secrets.PASSWORD}}
+  PASSWORD: ${{secrets.PASSWORD}}
 
 
 jobs:
