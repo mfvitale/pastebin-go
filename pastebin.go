@@ -132,6 +132,24 @@ func (client Client) UserInfo() (*model.User, error) {
 	return model.NewUser(userRes), nil
 }
 
+func (client Client) GetRawPaste(pasteKey string) (string, error) {
+
+	req := url.Values{
+		"api_dev_key":   {client.devKey},
+		"api_user_key":  {client.userKey},
+		"api_paste_key": {pasteKey},
+		"api_option":    {"show_paste"},
+	}
+
+	res, err := doCall(apiPostUrl, req)
+
+	if err != nil {
+		return "", fmt.Errorf("Error during call to 'GetRawPaste' on PasteBin API: %w", err)
+	}
+
+	return extractStringResponse(res), nil
+}
+
 func connect(username string, password string, devKey string) (string, error) {
 
 	req := url.Values{
