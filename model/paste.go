@@ -1,6 +1,6 @@
 package model
 
-import "github.com/mfvitale/pastebin-go/client/dto"
+import "github.com/mfvitale/pastebin-go/internal/client/dto"
 
 type Paste struct {
 	Key         string
@@ -15,7 +15,7 @@ type Paste struct {
 	Hits        int
 }
 
-func From(paste dto.Paste) Paste {
+func NewPaste(paste dto.Paste) Paste {
 	return Paste{paste.Key,
 		paste.Date,
 		paste.Title,

@@ -2,7 +2,7 @@ package model
 
 import (
 	dtomapper "github.com/dranikpg/dto-mapper"
-	"github.com/mfvitale/pastebin-go/client/dto"
+	"github.com/mfvitale/pastebin-go/internal/client/dto"
 )
 
 var mapper = dtomapper.Mapper{}
@@ -15,8 +15,22 @@ const (
 	Private             = 2
 )
 
-func (e Visibility) String() string {
-	switch e {
+func NewVisibility(visibility int) Visibility {
+
+	switch visibility {
+	case 0:
+		return Public
+	case 1:
+		return Unlisted
+	case 2:
+		return Private
+	default:
+		return -1
+	}
+}
+
+func (v Visibility) String() string {
+	switch v {
 	case Public:
 		return "0"
 	case Unlisted:

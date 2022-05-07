@@ -21,13 +21,14 @@ type Paste struct {
 }
 
 type User struct {
-	Name       string
-	Format     string
-	Expiration string
-	Avatar     string
-	Visibility string
-	Website    string
-	Email      string
-	Location   string
-	Type       string
+	XMLName    xml.Name `xml:"user"`
+	Name       string   `xml:"user_name"`
+	Format     string   `xml:"user_format_short"`
+	Expiration string   `xml:"user_expiration"`
+	Avatar     string   `xml:"user_avatar_url"`
+	Visibility int      `xml:"user_private"`
+	Website    string   `xml:"user_website"`
+	Email      string   `xml:"user_email"`
+	Location   string   `xml:"user_location"`
+	Type       int      `xml:"user_account_type"`
 }

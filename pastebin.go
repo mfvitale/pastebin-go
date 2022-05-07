@@ -7,8 +7,9 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"reflect"
 
-	"github.com/mfvitale/pastebin-go/client/dto"
+	"github.com/mfvitale/pastebin-go/internal/client/dto"
 	"github.com/mfvitale/pastebin-go/model"
 )
 
@@ -98,14 +99,37 @@ func (client Client) GetPastes() ([]model.Paste, error) {
 		return nil, fmt.Errorf("Error during call to 'GetPastes' on PasteBin API: %w", err)
 	}
 
-	pastesRes := extractXmlResponse(res)
+	pastesRes := dto.PasteWrapper{}
 
-	pastes := make([]model.Paste, len(pastesRes))
-	for i, paste := range pastesRes {
-		pastes[i] = model.From(paste)
+	extractXmlResponse(res, &pastesRes)
+
+	pastes := make([]model.Paste, len(pastesRes.Pastes))
+	for i, paste := range pastesRes.Pastes {
+		pastes[i] = model.NewPaste(paste)
 	}
 
 	return pastes, nil
+}
+
+func (client Client) UserInfo() (*model.User, error) {
+
+	req := url.Values{
+		"api_dev_key":  {client.devKey},
+		"api_user_key": {client.userKey},
+		"api_option":   {"userdetails"},
+	}
+
+	res, err := doCall(apiPostUrl, req)
+
+	if err != nil {
+		return nil, fmt.Errorf("Error during call to 'UserInfo' on PasteBin API: %w", err)
+	}
+
+	userRes := dto.User{}
+
+	extractXmlResponse(res, &userRes)
+
+	return model.NewUser(userRes), nil
 }
 
 func connect(username string, password string, devKey string) (string, error) {
@@ -143,15 +167,16 @@ func extractStringResponse(body []byte) string {
 	return string(body)
 }
 
-func extractXmlResponse(body []byte) []dto.Paste {
+func extractXmlResponse[T any](body []byte, class *T) {
 
-	//This beacuse response from pastebin API is an invalid XML
-	result := "<pastes>" + string(body) + "</pastes>"
+	var result = string(body)
 
-	pastes := dto.PasteWrapper{}
+	if reflect.TypeOf(class).Elem() == reflect.TypeOf(dto.PasteWrapper{}) {
+		//This beacuse response from pastebin API is an invalid XML
+		result = "<pastes>" + result + "</pastes>"
+	}
 
-	xml.Unmarshal([]byte(result), &pastes)
-	return pastes.Pastes
+	xml.Unmarshal([]byte(result), class)
 }
 
 func doCall(url string, data url.Values) ([]byte, error) {
