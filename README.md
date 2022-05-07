@@ -1,3 +1,4 @@
+[![Go](https://github.com/mfvitale/pastebin-go/actions/workflows/go.yml/badge.svg)](https://github.com/mfvitale/pastebin-go/actions/workflows/go.yml)
 [![Go Reference](https://pkg.go.dev/badge/github.com/mfvitale/pastebin-go.svg)](https://pkg.go.dev/github.com/mfvitale/pastebin-go)
 ![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/mfvitale/pastebin-go?style=flat-square)
 ![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/mfvitale/pastebin-go?style=flat-square)
